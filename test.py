@@ -17,7 +17,7 @@ def test_lamina():
     lam = Lamina(
         mat,
         0.19,
-        45
+        90
     )
 
     sigma = np.array(
@@ -31,6 +31,10 @@ def test_lamina():
 
     print(mat.alpha)
     print(lam.alphabar)
+
+    lam.max_stress(sigma,100,10,50,10,True)
+
+#test_lamina()
 
 def test_laminate():
     mat = Material(
@@ -49,13 +53,13 @@ def test_laminate():
     
     N = np.array([
         [1000],
-        [1000],
+        [0],
         [0]
     ])
     M = np.array([
-        [10],
         [0],
-        [10]
+        [0],
+        [0]
     ])
     eps0, kappa = laminate.forces2def(N,M,10)
 

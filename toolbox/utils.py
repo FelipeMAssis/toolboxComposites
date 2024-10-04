@@ -1,56 +1,81 @@
 import numpy as np
 
 def tensor2vec(A):
-    if len(A) == 2:
-        Avec = np.zeros([3,1])
-        Avec[0] = A[0,0]
-        Avec[1] = A[1,1]
-        Avec[2] = A[0,1]
-        return Avec
-    if len(A) == 3:
-        Avec = np.zeros([6,1])
-        Avec[0] = A[0,0]
-        Avec[1] = A[1,1]
-        Avec[2] = A[2,2]
-        Avec[3] = A[1,2]
-        Avec[4] = A[0,2]
-        Avec[5] = A[0,1]
-        return Avec
+    """
+    Convert a 2x2 or 3x3 tensor (matrix) to a vector format.
+    
+    Parameters:
+    - A: 2D numpy array representing the tensor
+    
+    Returns:
+    - Avec: Vector representation of the tensor
+    """
+    shape = A.shape
+    if shape == (2, 2):
+        return np.array([[A[0, 0]], [A[1, 1]], [A[0, 1]]])
+    elif shape == (3, 3):
+        return np.array([[A[0, 0]], [A[1, 1]], [A[2, 2]], [A[1, 2]], [A[0, 2]], [A[0, 1]]])
+    else:
+        raise ValueError("Input tensor must be 2x2 or 3x3")
 
 def vec2tensor(Avec):
-    if Avec.shape[0] == 3:
-        A = np.zeros([2,2])
-        A[0,0] = Avec[0]
-        A[1,1] = Avec[1]
-        A[0,1] = Avec[2]
-        A[1,0] = Avec[2]
-        return A
-    if Avec.shape[0] == 5:
-        A = np.zeros([3,3])
-        A[0,0] = Avec[0]
-        A[1,1] = Avec[1]
-        A[2,2] = Avec[2]
-        A[1,2] = Avec[3]
-        A[2,1] = Avec[3]
-        A[0,2] = Avec[4]
-        A[2,0] = Avec[4]
-        A[0,1] = Avec[5]
-        A[1,0] = Avec[5]
-        return A
+    """
+    Convert a vector to a 2x2 or 3x3 tensor (matrix).
     
+    Parameters:
+    - Avec: Vector representing the tensor
+    
+    Returns:
+    - A: Tensor (matrix) representation of the vector
+    """
+    length = Avec.shape[0]
+    
+    if length == 3:  # Convert to 2x2 matrix
+        A = np.zeros((2, 2))
+        A[0, 0] = Avec[0]
+        A[1, 1] = Avec[1]
+        A[0, 1] = A[1, 0] = Avec[2]
+        return A
+    elif length == 6:  # Convert to 3x3 matrix
+        A = np.zeros((3, 3))
+        A[0, 0] = Avec[0]
+        A[1, 1] = Avec[1]
+        A[2, 2] = Avec[2]
+        A[1, 2] = A[2, 1] = Avec[3]
+        A[0, 2] = A[2, 0] = Avec[4]
+        A[0, 1] = A[1, 0] = Avec[5]
+        return A
+    else:
+        raise ValueError("Input vector must have a length of 3 (2x2 tensor) or 6 (3x3 tensor)")
+
 def rotate(theta, A):
-        flag = False
-        if A.shape[1]==1:
-            flag = True
-            A = vec2tensor(A)
-        theta = np.pi*theta/180
-        c = np.cos(theta)
-        s = np.sin(theta)
-        T = np.array(
-            [[c, -s],
-            [s, c]]
-        )
-        Ap = T.transpose() @ A @ T
-        if flag:
-             return tensor2vec(Ap)
-        return Ap
+    """
+    Rotate a tensor by an angle theta (in degrees).
+    
+    Parameters:
+    - theta: Angle of rotation in degrees
+    - A: Tensor to be rotated (either in matrix or vector form)
+    
+    Returns:
+    - Rotated tensor in the same format as input (matrix or vector)
+    """
+    # Check if the input is a vector and convert to matrix if needed
+    is_vector = A.shape[1] == 1
+    if is_vector:
+        A = vec2tensor(A)
+    
+    # Convert theta from degrees to radians
+    theta_rad = np.radians(theta)
+    c, s = np.cos(theta_rad), np.sin(theta_rad)
+    
+    # Rotation matrix
+    T = np.array([[c, -s], [s, c]])
+    
+    # Perform the rotation
+    A_rotated = T.T @ A @ T
+    
+    # Convert back to vector form if it was initially a vector
+    if is_vector:
+        return tensor2vec(A_rotated)
+    
+    return A_rotated
