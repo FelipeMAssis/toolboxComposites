@@ -3,6 +3,7 @@
 This repository contains a Python toolbox for modeling composite laminate materials, designed to handle various operations such as stress-strain calculations, laminate theory, and failure criteria for composite laminae and laminates.
 
 ## Directory Structure
+```
 toolbox/
 ├── __init__.py       # Initialization file for the package
 ├── lamina.py         # Defines the Lamina class for individual ply properties
@@ -11,7 +12,7 @@ toolbox/
 └── utils.py          # Utility functions for tensor and vector operations
 .gitignore             # Files to be ignored by Git
 requirements.txt       # List of Python dependencies
-
+```
 
 ## Features
 
