@@ -4,13 +4,13 @@ This repository contains a Python toolbox for modeling composite laminate materi
 
 ## Directory Structure
 toolbox/
-├── init.py # Initialization file for the package
-├── lamina.py # Defines the Lamina class for individual ply properties
-├── laminate.py# Defines the Laminate class for layup calculations
-├── material.py # Defines the Material class for material properties
-└── utils.py # Utility functions for tensor and vector operations
-.gitignore # Files to be ignored by Git
-requirements.txt # List of Python dependencies
+├── __init__.py       # Initialization file for the package
+├── lamina.py         # Defines the Lamina class for individual ply properties
+├── laminate.py       # Defines the Laminate class for layup calculations
+├── material.py       # Defines the Material class for material properties
+└── utils.py          # Utility functions for tensor and vector operations
+.gitignore             # Files to be ignored by Git
+requirements.txt       # List of Python dependencies
 
 
 ## Features
