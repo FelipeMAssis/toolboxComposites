@@ -1,6 +1,17 @@
-import numpy as np
+# import numpy as np
 
 class Plate:
+    """
+    A class representing a composite plate constructed from a laminate.
+
+    Attributes:
+    - laminate: The Laminate object that contains stiffness matrices (ABD), particularly the D matrix for bending stiffness
+    - length: Length of the plate (denoted as 'a')
+    - width: Width of the plate (denoted as 'b')
+
+    Methods:
+    - __init__: Initializes the plate with a laminate, length, and width.
+    """
     def __init__(self, laminate, length, width):
         """
         Initialize the Plate class with a laminate, length, and width.
@@ -14,7 +25,9 @@ class Plate:
         self.length = length
         self.width = width
 
-    def solve_navier(self, amn):
+    # Solução de Navier não validada
+
+    '''def solve_navier(self, amn):
         """
         Solve the Navier solution for the plate based on input coefficients amn.
 
@@ -45,6 +58,6 @@ class Plate:
                                D22 * j_term**4)
                 Amn[i, j] = amn[i, j] / denominator if denominator != 0 else 0
 
-        return Amn
+        return Amn'''
     
 

@@ -1,4 +1,7 @@
-import matplotlib.pyplot as plt
+
+# Solução de Navier não validada
+
+'''import matplotlib.pyplot as plt
 from toolbox.results import PlateNavierResults
 
 class PlateNavierAnalysis:
@@ -17,5 +20,5 @@ class PlateNavierAnalysis:
             self.results.append(results_line)
         
     def plot_convergence(self,x,y,laminate_var=None,lamina_var=None,lamina=None,top=None):
-        plt.figure()
+        plt.figure()'''
 

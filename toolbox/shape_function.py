@@ -2,12 +2,37 @@ import numpy as np
 
 class SSPolyShapeFun:
     def __init__(self,length,width,m,n):
+        """
+        Initializes the SSPolyShapeFun class for shape functions using polynomial basis.
+
+        Args:
+            length: Length of the plate.
+            width: Width of the plate.
+            m: Number of modes in the x-direction.
+            n: Number of modes in the y-direction.
+        """
         self.length = length
         self.width = width
         self.n = n
         self.m = m
 
     def Nk(self,x,y,i,j,a,b,dx=0,dy=0):
+        """
+        Computes the shape function or its derivatives.
+
+        Args:
+            x: X-coordinate.
+            y: Y-coordinate.
+            i: Mode number in the x-direction.
+            j: Mode number in the y-direction.
+            a: Length of the plate.
+            b: Width of the plate.
+            dx: Derivative order in the x-direction (default 0).
+            dy: Derivative order in the y-direction (default 0).
+
+        Returns:
+            Value of the shape function or its derivative.
+        """
         if dx==0 and dy==0:
             return x*(x-a)*y*(y-b)*x**i*y**j
         elif dx==1 and dy==0:

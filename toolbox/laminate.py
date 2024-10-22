@@ -8,6 +8,27 @@ from utils.angular_hatch import AngularHatch
 matplotlib.hatch._hatch_types.append(AngularHatch)
 
 class Laminate:
+    """
+    A class representing a composite laminate, composed of multiple lamina layers.
+
+    Attributes:
+    - layup: List of Lamina objects representing the layers of the laminate
+    - thickness: Total thickness of the laminate
+    - A: Extensional stiffness matrix of the laminate
+    - B: Coupling stiffness matrix of the laminate
+    - D: Bending stiffness matrix of the laminate
+
+    Methods:
+    - __init__: Initializes the laminate with the layup of lamina layers.
+    - calc_thickness: Calculates the total thickness of the laminate.
+    - assign_lamina_z: Assigns z-coordinates (top and bottom) to each lamina based on thickness.
+    - compute_ABD_matrices: Computes the A, B, and D stiffness matrices.
+    - calc_thermal_forces: Computes thermal forces and moments due to a temperature change.
+    - calc_forces: Computes resultant forces and moments due to strain, curvature, and temperature effects.
+    - calc_def: Calculates mid-plane strains and curvatures from applied forces and moments.
+    - lamina_def: Computes strain distribution across individual laminae.
+    """
+
     def __init__(self, layup):
         """
         Initialize the Laminate class with a given layup.
@@ -32,6 +53,8 @@ class Laminate:
     def assign_lamina_z(self):
         """
         Assign the z-coordinates (top and bottom) to each lamina in the laminate.
+        This method calculates the top and bottom coordinates for each lamina 
+        based on the laminate thickness distribution.
         """
         thicknesses = [lam.t for lam in self.layup]
         z_coords = np.cumsum([0] + thicknesses) - np.sum(thicknesses) / 2
@@ -42,13 +65,13 @@ class Laminate:
     def compute_ABD_matrices(self):
         """
         Compute the A, B, and D stiffness matrices for the laminate.
+        These matrices describe the extensional, coupling, and bending stiffness of the laminate.
 
         Returns:
         - A: Extensional stiffness matrix
         - B: Coupling stiffness matrix
         - D: Bending stiffness matrix
         """
-
         # Initialize A, B, and D matrices as zero matrices
         A = np.zeros((3, 3))
         B = np.zeros((3, 3))
@@ -72,7 +95,6 @@ class Laminate:
         - Nt: Thermal force vector (3x1)
         - Mt: Thermal moment vector (3x1)
         """
-
         Nt = np.zeros((3, 1))
         Mt = np.zeros((3, 1))
 
@@ -136,6 +158,17 @@ class Laminate:
         return eps0, kappa, Nt, Mt
 
     def lamina_def(self, eps0, kappa):
+        """
+        Compute strain distribution across individual laminae in the laminate.
+
+        Parameters:
+        - eps0: Mid-plane strain vector (3x1)
+        - kappa: Curvature vector (3x1)
+
+        Returns:
+        - epsbot: Strain at the bottom surface of each lamina
+        - epstop: Strain at the top surface of each lamina
+        """
         epsbot = []
         epstop = []
         for lam in self.layup:

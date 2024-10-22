@@ -4,7 +4,28 @@ from toolbox.results import LaminaResults
 from scipy.optimize import fsolve
 
 class CommomCriterion:
+    """
+    A base class for common failure criteria used in composite material analysis.
+
+    Attributes:
+    - Xt: Tensile strength in the fiber direction
+    - Yt: Tensile strength in the transverse direction
+    - Xc: Compressive strength in the fiber direction
+    - Yc: Compressive strength in the transverse direction
+    - S: Shear strength
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the CommomCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.Xt = Xt
         self.Yt = Yt
         self.Xc = Xc
@@ -12,11 +33,37 @@ class CommomCriterion:
         self.S = S  
 
 class MaxStressCriterion(CommomCriterion):
+    """
+    A class to evaluate failure based on the Maximum Stress Criterion.
+    Inherits from CommomCriterion.
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the MaxStressCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.name = 'Max Stress'
         super().__init__(Xt, Yt, Xc, Yc, S)
     
     def evaluate(self, lamina_results):
+        """
+        Evaluate the failure criterion based on lamina results.
+
+        Parameters:
+        - lamina_results: LaminaResults object containing stress components
+
+        Returns:
+        - fail: Boolean indicating if failure occurs (True if crit >= 1)
+        - crit: Failure index (maximum stress ratio)
+        - strength: Reserve factor (strength margin)
+        """
         sigmap = lamina_results.sigmap
         sigmap = tensor(sigmap)
         sigma11, sigma22, sigma12 = sigmap[0, 0], sigmap[1, 1], sigmap[0,1]
@@ -31,11 +78,37 @@ class MaxStressCriterion(CommomCriterion):
         return fail, crit, strength
 
 class MaxStrainCriterion(CommomCriterion):
+    """
+    A class to evaluate failure based on the Maximum Strain Criterion.
+    Inherits from CommomCriterion.
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the MaxStrainCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.name = 'Max Strain'
         super().__init__(Xt, Yt, Xc, Yc, S)
 
     def evaluate(self, lamina_results):
+        """
+        Evaluate the failure criterion based on lamina strain results.
+
+        Parameters:
+        - lamina_results: LaminaResults object containing stress components and material properties
+
+        Returns:
+        - fail: Boolean indicating if failure occurs (True if crit >= 1)
+        - crit: Failure index (maximum strain ratio)
+        - strength: Reserve factor (strength margin)
+        """
         sigmap = lamina_results.sigmap
         sigmap = tensor(sigmap)
         v12 = lamina_results.lamina.material.v12
@@ -52,11 +125,37 @@ class MaxStrainCriterion(CommomCriterion):
         return fail, crit, strength
 
 class TsaiHillCriterion(CommomCriterion):
+    """
+    A class to evaluate failure based on the Tsai-Hill Criterion.
+    Inherits from CommomCriterion.
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the TsaiHillCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.name = 'Tsai Hill'
         super().__init__(Xt, Yt, Xc, Yc, S)
 
     def evaluate(self, lamina_results):
+        """
+        Evaluate the failure criterion based on lamina stress results.
+
+        Parameters:
+        - lamina_results: LaminaResults object containing stress components
+
+        Returns:
+        - fail: Boolean indicating if failure occurs (True if crit >= 1)
+        - crit: Failure index (Tsai-Hill criterion value)
+        - strength: Reserve factor (strength margin)
+        """
         sigmap = lamina_results.sigmap
         sigmap = tensor(sigmap)
         sigma11, sigma22, tau12 = sigmap[0, 0], sigmap[1, 1], sigmap[0, 1]
@@ -68,11 +167,37 @@ class TsaiHillCriterion(CommomCriterion):
         return fail, crit, strength
 
 class HoffmanCriterion(CommomCriterion):
+    """
+    A class to evaluate failure based on the Hoffman Criterion.
+    Inherits from CommomCriterion.
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the HoffmanCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.name = 'Hoffman'
         super().__init__(Xt, Yt, Xc, Yc, S)
 
     def evaluate(self, lamina_results):
+        """
+        Evaluate the failure criterion based on lamina stress results.
+
+        Parameters:
+        - lamina_results: LaminaResults object containing stress components
+
+        Returns:
+        - fail: Boolean indicating if failure occurs (True if crit >= 1)
+        - crit: Failure index (Hoffman criterion value)
+        - strength: Reserve factor (strength margin)
+        """
         sigmap = lamina_results.sigmap
         crit = self.evaluate_crit(sigmap)
         fail = crit >= 1
@@ -80,7 +205,15 @@ class HoffmanCriterion(CommomCriterion):
         return fail, crit, strength
         
     def evaluate_crit(self,sigmap):
-        
+        """
+        Compute the Hoffman failure criterion value for the given stress state.
+
+        Parameters:
+        - sigmap: Stress tensor in principal material coordinates
+
+        Returns:
+        - crit: Failure index based on the Hoffman criterion
+        """
         sigmap = tensor(sigmap)
         sigma11, sigma22, tau12 = sigmap[0, 0], sigmap[1, 1], sigmap[0, 1]
         crit = (
@@ -94,11 +227,37 @@ class HoffmanCriterion(CommomCriterion):
         return crit
 
 class TsaiWuCriterion(CommomCriterion):
+    """
+    A class to evaluate failure based on the Tsai-Wu Criterion.
+    Inherits from CommomCriterion.
+    """
+
     def __init__(self, Xt, Yt, Xc, Yc, S):
+        """
+        Initialize the TsaiWuCriterion class.
+
+        Parameters:
+        - Xt: Tensile strength in the fiber direction
+        - Yt: Tensile strength in the transverse direction
+        - Xc: Compressive strength in the fiber direction
+        - Yc: Compressive strength in the transverse direction
+        - S: Shear strength
+        """
         self.name = 'Tsai Wu'
         super().__init__(Xt, Yt, Xc, Yc, S)
 
     def evaluate(self, lamina_results):
+        """
+        Evaluate the failure criterion based on lamina stress results.
+
+        Parameters:
+        - lamina_results: LaminaResults object containing stress components
+
+        Returns:
+        - fail: Boolean indicating if failure occurs (True if crit >= 1)
+        - crit: Failure index (Tsai-Wu criterion value)
+        - strength: Reserve factor (strength margin)
+        """
         sigmap = lamina_results.sigmap
         crit = self.evaluate_crit(sigmap)
         fail = crit >= 1
@@ -107,6 +266,15 @@ class TsaiWuCriterion(CommomCriterion):
         
     
     def evaluate_crit(self, sigmap):
+        """
+        Compute the Tsai-Wu failure criterion value for the given stress state.
+
+        Parameters:
+        - sigmap: Stress tensor in principal material coordinates
+
+        Returns:
+        - crit: Failure index based on the Tsai-Wu criterion
+        """
         F1 = 1/self.Xt-1/self.Xc
         F2 = 1/self.Yt-1/self.Yc
         F11 = 1/(self.Xt*self.Xc)

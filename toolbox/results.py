@@ -2,27 +2,38 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Patch
-from utils.tensors import vector, tensor, rotate
+from utils.tensors import rotate
 from utils.angular_hatch import AngularHatch
 matplotlib.hatch._hatch_types.append(AngularHatch)
-from toolbox.lamina import Lamina
-from toolbox.laminate import Laminate
-from toolbox.plate import Plate
-from toolbox.plate_load import UniformLoadNavier, PointLoadNavier
+#from toolbox.lamina import Lamina
+#from toolbox.laminate import Laminate
+#from toolbox.plate import Plate
+#from toolbox.plate_load import UniformLoadNavier, PointLoadNavier
 from toolbox.shape_function import IncompleteSine, CompleteSine, SSPolyShapeFun
-from scipy.integrate import quad, dblquad, quad_vec
 import scipy as sp
 
 class LaminaResults:
+    """
+    Class to hold and analyze the results of a single lamina in a composite material.
+
+    Attributes:
+    - lamina: Instance of the Lamina class representing the material properties.
+    - deltaT: Temperature change affecting the lamina.
+    - eps: Strain vector (3D).
+    - sigma: Stress vector (3D).
+    - failure_criteria: List of failure criteria objects to evaluate lamina performance.
+    """
+
     def __init__(self, lamina, deltaT=0, eps=None, sigma=None, failure_criteria=[]):
         """
-        Initialize the LaminaResults class, calculating stress or strain based on the provided values.
+        Initializes the LaminaResults class.
 
         Parameters:
-        - lamina: Lamina object
-        - deltaT: Temperature difference
-        - eps: Strain vector (optional)
-        - sigma: Stress vector (optional)
+        - lamina: Lamina object representing the material.
+        - deltaT: Temperature change.
+        - eps: Strain vector (optional).
+        - sigma: Stress vector (optional).
+        - failure_criteria: List of failure criteria to evaluate (optional).
         """
         self.lamina = lamina
         self.deltaT = deltaT
@@ -56,6 +67,11 @@ class LaminaResults:
             self.rdict[crit.name] = crit.evaluate(self)[1:]
 
     def evaluate_failure(self):
+        """
+        Evaluates all failure criteria for the current lamina results.
+
+        Prints the failure state, criterion values, and strength margins.
+        """
         for crit in self.failure_criteria:
             fail,value,strength = crit.evaluate(self)
             print(crit.name)
@@ -65,14 +81,14 @@ class LaminaResults:
     
     def plot_vecs(self, ax, vec, pos1=0, pos2 = 0.1, color='blue'):
         """
-        Plot vectors (strain or stress) on the figure.
+        Plots strain or stress vectors as arrows on the given axes.
 
         Parameters:
-        - ax: Matplotlib axis
-        - vec: Vector to plot (strain or stress)
-        - pos1: Position offset for the arrows in the x direction
-        - pos2: Position offset for the arrows in the y direction
-        - color: Arrow color
+        - ax: Matplotlib axes to plot on.
+        - vec: Vector to be plotted (strain or stress).
+        - pos1: Position for the first vector.
+        - pos2: Position offset for additional vectors.
+        - color: Color of the vectors to be plotted.
         """
         scalevec = max([abs(e) for e in vec])/2
         sgx = vec[0]!=abs(vec[0])
@@ -160,10 +176,10 @@ class LaminaResults:
         
     def plot_state(self, alligned=False):
         """
-        Plot the state of strain and stress on the lamina, considering its alignment.
+        Plots the state of the lamina, including strain and stress vectors.
 
         Parameters:
-        - aligned: If True, plot in the principal material axes. Otherwise, plot in global axes.
+        - alligned: Boolean to determine if aligned principal values should be used for plotting.
         """
         if alligned:
             eps = self.epsp
@@ -186,33 +202,33 @@ class LaminaResults:
         
 
 class LaminateResults:
+    """
+    Class to hold and analyze the results of a laminate (stack of laminae) in a composite material.
+
+    Attributes:
+    - laminate: Instance of the Laminate class representing the laminate structure.
+    - deltaT: Temperature change affecting the laminate.
+    - eps0: Initial strain vector (3D).
+    - kappa: Curvature vector (3D).
+    - N: Axial force vector (3D).
+    - M: Bending moment vector (3D).
+    - Nt: Total axial forces at the top surface.
+    - Mt: Total bending moments at the top surface.
+    - failure_criteria: List of failure criteria objects to evaluate laminate performance.
+    """
+
     def __init__(self, laminate, deltaT=0, eps0=None, kappa=None, N=None, M=None, failure_criteria=[]):
         """
-        Initialize the LaminateResults class to calculate and store results for a composite laminate.
+        Initializes the LaminateResults class.
 
         Parameters:
-        - laminate (Laminate): An instance of the Laminate class representing the laminate configuration.
-        - deltaT (float, optional): Temperature change applied to the laminate. Default is 0.
-        - eps0 (numpy array, optional): Mid-plane strain vector (ε₀). Should be provided if N and M are not specified.
-        - kappa (numpy array, optional): Curvature vector (κ). Should be provided if N and M are not specified.
-        - N (numpy array, optional): Resultant force vector (N). Should be provided if eps0 and kappa are not specified.
-        - M (numpy array, optional): Resultant moment vector (M). Should be provided if eps0 and kappa are not specified.
-
-        Either (eps0, kappa) or (N, M) must be provided, but not both.
-
-        Raises:
-        - ValueError: If neither (eps0, kappa) nor (N, M) are provided, or if both are provided simultaneously.
-
-        Attributes:
-        - eps0 (numpy array): Mid-plane strain vector calculated or provided.
-        - kappa (numpy array): Curvature vector calculated or provided.
-        - N (numpy array): Resultant force vector calculated or provided.
-        - M (numpy array): Resultant moment vector calculated or provided.
-        - Nt (numpy array): Thermal force vector due to temperature change.
-        - Mt (numpy array): Thermal moment vector due to temperature change.
-        - bot_lamina_results (list of LaminaResults): Results for each lamina at the bottom surface.
-        - top_lamina_results (list of LaminaResults): Results for each lamina at the top surface.
-        - rdict (dict): Dictionary containing all the calculated results for easy access.
+        - laminate: Laminate object representing the laminate structure.
+        - deltaT: Temperature change.
+        - eps0: Initial strain vector (optional).
+        - kappa: Curvature vector (optional).
+        - N: Axial force vector (optional).
+        - M: Bending moment vector (optional).
+        - failure_criteria: List of failure criteria to evaluate (optional).
         """
         self.laminate = laminate
         self.deltaT = deltaT
@@ -246,10 +262,14 @@ class LaminateResults:
             'LaminaTop':self.top_lamina_results,
             'LaminaBot':self.bot_lamina_results,
         }
-
         self.evaluate_failure()
     
     def evaluate_failure(self,show=False):
+        """
+        Evaluates all failure criteria for the current laminate results.
+
+        Prints the failure state, criterion values, and strength margins.
+        """
         for crit in self.failure_criteria:
             max_value = -np.inf
             for i,result in enumerate(self.bot_lamina_results+self.top_lamina_results):
@@ -327,6 +347,18 @@ class LaminateResults:
 
 class PlateResults:
     def __init__(self, plate, loads=[], springs=[], holes=[], divx=50, divy=50, failure_criteria=[]):
+        """
+        Initializes the PlateResults class, which handles the results of plate analysis.
+
+        Args:
+            plate: The plate object containing dimensions and material properties.
+            loads: List of loads applied to the plate.
+            springs: List of spring supports beneath the plate.
+            holes: List of holes in the plate.
+            divx: Number of divisions along the x-axis for plotting.
+            divy: Number of divisions along the y-axis for plotting.
+            failure_criteria: Criteria for failure analysis.
+        """
         self.plate = plate
         self.loads = loads
         self.springs = springs
@@ -337,7 +369,17 @@ class PlateResults:
         self.failure_criteria = failure_criteria
 
     def plot_deformed(self,xvec,yvec,w,title=None,show_max=False,show_min=False):
-        # Plot the deformed shape
+        """
+        Plots the deformed shape of the plate.
+
+        Args:
+            xvec: Array of x-coordinates for the plate.
+            yvec: Array of y-coordinates for the plate.
+            w: Deformation values at each (x, y) point.
+            title: Optional title for the plot.
+            show_max: If True, highlights the maximum deformation point.
+            show_min: If True, highlights the minimum deformation point.
+        """
         plt.figure()
         plt.contourf(xvec, yvec, w)
         if show_min:
@@ -368,6 +410,19 @@ class PlateResults:
         plt.ylabel('y')
 
     def plot_state(self,laminate_var=None,dir=None,lamina=None,lamina_var=None,mode=0,title=None,show_min=False,show_max=False):
+        """
+        Plots the state variables of the laminate.
+
+        Args:
+            laminate_var: Variable of the laminate to plot (e.g., stress, strain).
+            dir: Direction of the laminate variable.
+            lamina: Specific lamina to consider for the plot.
+            lamina_var: Specific variable of the lamina to plot.
+            mode: Mode of analysis.
+            title: Optional title for the plot.
+            show_min: If True, highlights the minimum value point.
+            show_max: If True, highlights the maximum value point.
+        """
         a, b = self.plate.length, self.plate.width
         xvec = np.linspace(0, a, self.divx)
         yvec = np.linspace(0, b, self.divy)
@@ -407,131 +462,23 @@ class PlateResults:
         plt.xlabel('x')
         plt.ylabel('y')
 
-
-class PlateNavierResults(PlateResults):
-    """
-    Class for analyzing and plotting results of plate under loads using Navier's solution.
-
-    Attributes:
-    -----------
-    plate : Plate
-        Plate object containing the physical and material properties of the plate.
-    loads : list
-        List of load objects (UniformLoadNavier, PointLoadNavier) acting on the plate.
-    m, n : int
-        Number of terms in the Fourier series for x and y directions.
-    divx, divy : int
-        Number of divisions in x and y directions for plotting the load and deformation.
-
-    Methods:
-    --------
-    plot_load():
-        Plots the load distribution on the plate using the Fourier coefficients.
-    plot_deformed():
-        Plots the deformed shape of the plate.
-    """
-    def __init__(self, plate, loads=[], springs=[], holes=[], m=10, n=10, divx=50, divy=50, failure_criteria=[]):
-        """
-        Initializes the PlateNavierResults with the plate and load objects, 
-        and computes the Fourier coefficients for the load and displacement.
-
-        Parameters:
-        -----------
-        plate : Plate
-            Plate object with dimensions and material properties.
-        loads : list
-            List of load objects applied to the plate.
-        m, n : int, optional
-            Number of Fourier terms in the x and y directions (default is 10).
-        divx, divy : int, optional
-            Number of divisions in the x and y directions for plotting (default is 100).
-        """
-        super().__init__(plate, loads, springs, holes, divx, divy, failure_criteria)
-        self.m = m
-        self.n = n
-        # Calculate the Fourier coefficients for the load
-        self.amn = sum(load.calc_amn(self.m, self.n) for load in self.loads)
-        self.Amn = self.plate.solve_navier(self.amn)
-        
-    def get_laminate_results(self,x,y,_):
-        a, b = self.plate.length, self.plate.width
-        kappax = sum(
-            - ((im*2-1) * np.pi / a)**2 * self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
-            for im in range(self.m)
-            for jn in range(self.n)
-        )
-        kappay = sum(
-            - ((jn*2-1) * np.pi / b)**2 * self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
-            for im in range(self.m)
-            for jn in range(self.n)
-        )
-        kappaxy = sum(
-            2 * ((jn*2-1) * np.pi / b) * ((im*2-1) * np.pi / a) * self.Amn[im, jn] * np.cos((im*2-1) * np.pi * x / a) * np.cos((jn*2-1) * np.pi * y / b)
-            for im in range(self.m)
-            for jn in range(self.n)
-        )
-        kappa = np.array(
-            [[kappax],
-             [kappay],
-             [kappaxy]]
-        )
-        eps0 = np.zeros([3,1])
-        return LaminateResults(self.plate.laminate, deltaT=0, eps0=eps0, kappa = kappa, failure_criteria=self.failure_criteria)
-
-    def plot_load(self):
-        """
-        Plots the load distribution q(x, y) on the plate based on the Fourier coefficients (amn).
-        """
-        a, b = self.plate.length, self.plate.width
-        xvec = np.linspace(0, a, self.divx)
-        yvec = np.linspace(0, b, self.divy)
-        q = np.zeros((self.divx, self.divy))
-
-        # Compute load distribution using Fourier series
-        for i, x in enumerate(xvec):
-            for j, y in enumerate(yvec):
-                q[i, j] = sum(
-                    self.amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
-                    for im in range(self.m)
-                    for jn in range(self.n)
-                )
-
-        qt = np.sum(q)*(xvec[1]-xvec[0])*(yvec[1]-yvec[0])
-
-        # Plot the load distribution
-        plt.figure()
-        plt.contourf(xvec, yvec, q)
-        plt.colorbar()
-        plt.title(f'Load Distribution on Plate (total force = {qt:.2f})')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        #plt.show()
-
-    def plot_deformed(self):
-        """
-        Plots the deformed shape w(x, y) of the plate based on the Fourier coefficients (Amn).
-        """
-        a, b = self.plate.length, self.plate.width
-        xvec = np.linspace(0, a, self.divx)
-        yvec = np.linspace(0, b, self.divy)
-        w = np.zeros((self.divx, self.divy))
-
-        # Compute deformation using Fourier series
-        for i, x in enumerate(xvec):
-            for j, y in enumerate(yvec):
-                w[i, j] = sum(
-                    self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
-                    for im in range(self.m)
-                    for jn in range(self.n)
-                )
-
-        w /= np.pi**4
-
-        super().plot_deformed(xvec,yvec,w)
-        #plt.show()
-
 class PlateStaticBendingRR(PlateResults):
     def __init__(self, plate, loads=[], springs=[], holes=[], w_shape_fun='incomplete_sine', m=10, n=10, divx=50, divy=50, failure_criteria=[]):
+        """
+        Initializes the PlateStaticBendingRR class for static bending only analysis of plates using the Rayleigh Ritz method.
+
+        Args:
+            plate: The plate object containing dimensions and material properties.
+            loads: List of loads applied to the plate.
+            springs: List of spring supports beneath the plate.
+            holes: List of holes in the plate.
+            w_shape_fun: Shape function for the displacement (e.g., 'incomplete_sine').
+            m: Mode number in the x-direction.
+            n: Mode number in the y-direction.
+            divx: Number of divisions along the x-axis for plotting.
+            divy: Number of divisions along the y-axis for plotting.
+            failure_criteria: Criteria for failure analysis.
+        """
         super().__init__(plate, loads, springs, holes, divx, divy, failure_criteria)
         self.m = m
         self.n = n
@@ -561,6 +508,12 @@ class PlateStaticBendingRR(PlateResults):
         self.q = np.linalg.solve(self.K,self.F)
 
     def calculate_K(self):
+        """
+        Calculates the global stiffness matrix for the plate.
+
+        Returns:
+            K: The global stiffness matrix.
+        """
         a = self.plate.length
         b = self.plate.width
         xvec = np.linspace(0,a,self.divx)
@@ -580,6 +533,12 @@ class PlateStaticBendingRR(PlateResults):
         return K
     
     def calculate_K_springs(self):
+        """
+        Calculates the contribution of spring supports to the global stiffness matrix.
+
+        Returns:
+            K_springs: The stiffness matrix contribution from the springs.
+        """
         C = self.plate.laminate.D
         Htest = self.w_shape_fun.N_ww(0,0)
         test_mat = (Htest.T @ C @ Htest)
@@ -611,6 +570,12 @@ class PlateStaticBendingRR(PlateResults):
         return K
     
     def calculate_F(self):
+        """
+        Calculates the global load vector for the plate.
+
+        Returns:
+            F: The global load vector.
+        """
         Ntest = self.w_shape_fun.shape_fun(0,0)
         F = np.zeros(Ntest.T.shape)
         for load in self.loads:
@@ -942,3 +907,127 @@ class PlateModalRR(PlateRR):
         return M
 
 
+# Solução de Navier não validada
+
+'''class PlateNavierResults(PlateResults):
+    """
+    Class for analyzing and plotting results of plate under loads using Navier's solution.
+
+    Attributes:
+    -----------
+    plate : Plate
+        Plate object containing the physical and material properties of the plate.
+    loads : list
+        List of load objects (UniformLoadNavier, PointLoadNavier) acting on the plate.
+    m, n : int
+        Number of terms in the Fourier series for x and y directions.
+    divx, divy : int
+        Number of divisions in x and y directions for plotting the load and deformation.
+
+    Methods:
+    --------
+    plot_load():
+        Plots the load distribution on the plate using the Fourier coefficients.
+    plot_deformed():
+        Plots the deformed shape of the plate.
+    """
+    def __init__(self, plate, loads=[], springs=[], holes=[], m=10, n=10, divx=50, divy=50, failure_criteria=[]):
+        """
+        Initializes the PlateNavierResults with the plate and load objects, 
+        and computes the Fourier coefficients for the load and displacement.
+
+        Parameters:
+        -----------
+        plate : Plate
+            Plate object with dimensions and material properties.
+        loads : list
+            List of load objects applied to the plate.
+        m, n : int, optional
+            Number of Fourier terms in the x and y directions (default is 10).
+        divx, divy : int, optional
+            Number of divisions in the x and y directions for plotting (default is 100).
+        """
+        super().__init__(plate, loads, springs, holes, divx, divy, failure_criteria)
+        self.m = m
+        self.n = n
+        # Calculate the Fourier coefficients for the load
+        self.amn = sum(load.calc_amn(self.m, self.n) for load in self.loads)
+        self.Amn = self.plate.solve_navier(self.amn)
+        
+    def get_laminate_results(self,x,y,_):
+        a, b = self.plate.length, self.plate.width
+        kappax = sum(
+            - ((im*2-1) * np.pi / a)**2 * self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
+            for im in range(self.m)
+            for jn in range(self.n)
+        )
+        kappay = sum(
+            - ((jn*2-1) * np.pi / b)**2 * self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
+            for im in range(self.m)
+            for jn in range(self.n)
+        )
+        kappaxy = sum(
+            2 * ((jn*2-1) * np.pi / b) * ((im*2-1) * np.pi / a) * self.Amn[im, jn] * np.cos((im*2-1) * np.pi * x / a) * np.cos((jn*2-1) * np.pi * y / b)
+            for im in range(self.m)
+            for jn in range(self.n)
+        )
+        kappa = np.array(
+            [[kappax],
+             [kappay],
+             [kappaxy]]
+        )
+        eps0 = np.zeros([3,1])
+        return LaminateResults(self.plate.laminate, deltaT=0, eps0=eps0, kappa = kappa, failure_criteria=self.failure_criteria)
+
+    def plot_load(self):
+        """
+        Plots the load distribution q(x, y) on the plate based on the Fourier coefficients (amn).
+        """
+        a, b = self.plate.length, self.plate.width
+        xvec = np.linspace(0, a, self.divx)
+        yvec = np.linspace(0, b, self.divy)
+        q = np.zeros((self.divx, self.divy))
+
+        # Compute load distribution using Fourier series
+        for i, x in enumerate(xvec):
+            for j, y in enumerate(yvec):
+                q[i, j] = sum(
+                    self.amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
+                    for im in range(self.m)
+                    for jn in range(self.n)
+                )
+
+        qt = np.sum(q)*(xvec[1]-xvec[0])*(yvec[1]-yvec[0])
+
+        # Plot the load distribution
+        plt.figure()
+        plt.contourf(xvec, yvec, q)
+        plt.colorbar()
+        plt.title(f'Load Distribution on Plate (total force = {qt:.2f})')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        #plt.show()
+
+    def plot_deformed(self):
+        """
+        Plots the deformed shape w(x, y) of the plate based on the Fourier coefficients (Amn).
+        """
+        a, b = self.plate.length, self.plate.width
+        xvec = np.linspace(0, a, self.divx)
+        yvec = np.linspace(0, b, self.divy)
+        w = np.zeros((self.divx, self.divy))
+
+        # Compute deformation using Fourier series
+        for i, x in enumerate(xvec):
+            for j, y in enumerate(yvec):
+                w[i, j] = sum(
+                    self.Amn[im, jn] * np.sin((im*2-1) * np.pi * x / a) * np.sin((jn*2-1) * np.pi * y / b)
+                    for im in range(self.m)
+                    for jn in range(self.n)
+                )
+
+        w /= np.pi**4
+
+        super().plot_deformed(xvec,yvec,w)
+        #plt.show()
+'''

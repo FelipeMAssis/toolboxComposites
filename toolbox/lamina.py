@@ -1,8 +1,33 @@
 import numpy as np
 from utils.tensors import vector, tensor, rotate
 
-
 class Lamina:
+    """
+    A class to represent a lamina in a composite laminate, defined by its material properties, thickness, and orientation.
+
+    Attributes:
+    - material: Material object containing properties like E11, E22, G12, v12, etc.
+    - t: Thickness of the lamina
+    - Q: Stiffness matrix for the lamina in the principal material coordinate system
+    - S: Compliance matrix (inverse of Q)
+    - theta: Orientation angle of the lamina (in degrees)
+    - T: Transformation matrix based on the orientation angle
+    - Qbar: Transformed stiffness matrix (Q) in global coordinates
+    - Sbar: Transformed compliance matrix (S) in global coordinates
+    - alphabar: Transformed thermal expansion coefficients in global coordinates
+    - zbot: Bottom coordinate of the lamina (optional, can be assigned later)
+    - ztop: Top coordinate of the lamina (optional, can be assigned later)
+
+    Methods:
+    - __init__: Initializes the lamina with material, thickness, and orientation angle.
+    - calc_Q: Calculates and returns the stiffness matrix Q for the lamina.
+    - calc_T: Calculates and returns the transformation matrix T based on the lamina's angle.
+    - calc_Qbar: Calculates and returns the transformed stiffness matrix Qbar in global coordinates.
+    - calc_alphabar: Calculates and returns the transformed thermal expansion coefficients.
+    - calc_sigma: Calculates the stress based on strain and thermal effects.
+    - calc_eps: Calculates the strain based on stress and thermal effects.
+    """
+
     def __init__(self, material, t, theta=0, deg=True):
         """
         Initialize the Lamina class with material properties, thickness, and angle.
@@ -28,9 +53,9 @@ class Lamina:
     def calc_Q(self):
         """
         Calculate the stiffness matrix Q using the material properties.
-        
+
         Returns:
-        - Q: Stiffness matrix for the lamina
+        - Q: Stiffness matrix for the lamina in the principal material coordinate system.
         """
         E11 = self.material.E11
         E22 = self.material.E22
@@ -50,7 +75,7 @@ class Lamina:
         Calculate the transformation matrix T based on the lamina angle theta.
 
         Returns:
-        - T: Transformation matrix
+        - T: Transformation matrix, which is used to transform stiffness and strain components between coordinate systems.
         """
         theta_rad = np.radians(self.theta)
         c = np.cos(theta_rad)
@@ -63,10 +88,10 @@ class Lamina:
     
     def calc_Qbar(self):
         """
-        Calculate the transformed stiffness matrix Qbar.
+        Calculate the transformed stiffness matrix Qbar using the transformation matrix T.
 
         Returns:
-        - Qbar: Transformed stiffness matrix
+        - Qbar: Transformed stiffness matrix in global coordinates.
         """
         return self.T.T @ self.Q @ self.T
 
@@ -75,7 +100,7 @@ class Lamina:
         Calculate the transformed thermal expansion coefficients.
 
         Returns:
-        - alphabar: Transformed thermal expansion coefficients
+        - alphabar: Transformed thermal expansion coefficients in global coordinates.
         """
         return self.T @ self.material.alpha
     
@@ -85,12 +110,12 @@ class Lamina:
         Calculate the stress from strain and thermal effects.
 
         Parameters:
-        - eps: Strain vector
+        - eps: Strain vector in global coordinates
         - deltaT: Temperature difference (default: 0)
 
         Returns:
-        - sigma: Stress in global coordinates
-        - sigmap: Stress in principal material coordinates
+        - sigma: Stress vector in global coordinates
+        - sigmap: Stress vector in principal material coordinates
         - epst: Thermal strain due to temperature variation
         """
         eps_vec = vector(eps)
@@ -105,12 +130,12 @@ class Lamina:
         Calculate the strain from stress and thermal effects.
 
         Parameters:
-        - sigma: Stress vector
+        - sigma: Stress vector in global coordinates
         - deltaT: Temperature difference (default: 0)
 
         Returns:
-        - eps: Strain in global coordinates
-        - epsp: Strain in principal material coordinates
+        - eps: Strain vector in global coordinates
+        - epsp: Strain vector in principal material coordinates
         - epst: Thermal strain due to temperature variation
         """
         sigma_vec = vector(sigma)
