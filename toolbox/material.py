@@ -1,9 +1,7 @@
 import numpy as np
 
-import numpy as np
-
 class Material:
-    def __init__(self, E11, E22, G12, v12, alpha11=0, alpha22=0, alpha12=0):
+    def __init__(self, E11, E22, G12, v12, alpha11=0, alpha22=0, alpha12=0, rho=None):
         """
         Initialize the Material class with mechanical and thermal properties.
 
@@ -26,6 +24,8 @@ class Material:
 
         # Thermal expansion coefficients stored in a column vector
         self.alpha = np.array([[alpha11], [alpha22], [alpha12]])
+        
+        self.rho = rho
 
     def calculate_v21(self):
         """

@@ -1,6 +1,11 @@
 import numpy as np
 from toolbox.material import Material
 from toolbox.lamina import Lamina
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from utils.angular_hatch import AngularHatch
+matplotlib.hatch._hatch_types.append(AngularHatch)
 
 class Laminate:
     def __init__(self, layup):
@@ -10,95 +15,111 @@ class Laminate:
         Parameters:
         - layup: List of Lamina objects representing each layer of the laminate
         """
-        self.layup = layup      
+        self.layup = layup
+        self.thickness = self.calc_thickness()
+        self.assign_lamina_z()    
         self.A, self.B, self.D = self.compute_ABD_matrices()
+
+    def calc_thickness(self):
+        """
+        Calculate the total thickness of the laminate.
+
+        Returns:
+        - thickness: Total thickness of the laminate
+        """
+        return sum([lam.t for lam in self.layup])
+
+    def assign_lamina_z(self):
+        """
+        Assign the z-coordinates (top and bottom) to each lamina in the laminate.
+        """
+        thicknesses = [lam.t for lam in self.layup]
+        z_coords = np.cumsum([0] + thicknesses) - np.sum(thicknesses) / 2
+        for i,lam in enumerate(self.layup):
+            lam.zbot = z_coords[i]
+            lam.ztop = z_coords[i+1]
 
     def compute_ABD_matrices(self):
         """
-        Compute the A, B, and D matrices for the laminate.
+        Compute the A, B, and D stiffness matrices for the laminate.
 
         Returns:
         - A: Extensional stiffness matrix
         - B: Coupling stiffness matrix
         - D: Bending stiffness matrix
         """
-        thicknesses = [lam.t for lam in self.layup]
-        z_coords = np.cumsum([0] + thicknesses) - np.sum(thicknesses) / 2
-        Qbars = [lam.Qbar for lam in self.layup]
 
         # Initialize A, B, and D matrices as zero matrices
         A = np.zeros((3, 3))
         B = np.zeros((3, 3))
         D = np.zeros((3, 3))
 
-        for i, Qbar in enumerate(Qbars):
-            delta_z = z_coords[i+1] - z_coords[i]
-            A += delta_z * Qbar
-            B += (z_coords[i+1]**2 - z_coords[i]**2) / 2 * Qbar
-            D += (z_coords[i+1]**3 - z_coords[i]**3) / 3 * Qbar
+        for lam in self.layup:
+            A += (lam.ztop-lam.zbot) * lam.Qbar
+            B += (lam.ztop**2 - lam.zbot**2) / 2 * lam.Qbar
+            D += (lam.ztop**3 - lam.zbot**3) / 3 * lam.Qbar
 
         return A, B, D
     
-    def thermal_forces_and_moments(self, deltaT):
+    def calc_thermal_forces(self, deltaT):
         """
-        Compute thermal forces (N) and moments (M) due to a temperature change.
+        Compute thermal forces and moments due to a temperature change.
 
         Parameters:
         - deltaT: Temperature difference
 
         Returns:
-        - Nt: Thermal force vector
-        - Mt: Thermal moment vector
+        - Nt: Thermal force vector (3x1)
+        - Mt: Thermal moment vector (3x1)
         """
-        thicknesses = [lam.t for lam in self.layup]
-        z_coords = np.cumsum([0] + thicknesses) - np.sum(thicknesses) / 2
-        Qbars = [lam.Qbar for lam in self.layup]
-        alphabars = [lam.alphabar for lam in self.layup]
 
         Nt = np.zeros((3, 1))
         Mt = np.zeros((3, 1))
 
-        for i, Qbar in enumerate(Qbars):
-            delta_z = z_coords[i+1] - z_coords[i]
-            Nt += delta_z * (Qbar @ (deltaT * alphabars[i]))
-            Mt += (z_coords[i+1]**2 - z_coords[i]**2) / 2 * (Qbar @ (deltaT * alphabars[i]))
+        for lam in self.layup:
+            Nt += (lam.ztop-lam.zbot) * (lam.Qbar @ (deltaT * lam.alphabar))
+            Mt += (lam.ztop**2 - lam.zbot**2) / 2 * (lam.Qbar @ (deltaT * lam.alphabar))
 
         return Nt, Mt
     
-    def def2forces(self, eps0, kappa, deltaT=0):
+    def calc_forces(self, eps0, kappa, deltaT=0):
         """
-        Compute the resultant forces (N) and moments (M) based on strains, curvatures, and temperature.
+        Compute the resultant forces and moments based on mid-plane strains, curvatures, and temperature.
 
         Parameters:
-        - eps0: Mid-plane strain vector
-        - kappa: Curvature vector
+        - eps0: Mid-plane strain vector (3x1)
+        - kappa: Curvature vector (3x1)
         - deltaT: Temperature difference (default: 0)
 
         Returns:
-        - N: Resultant force vector
-        - M: Resultant moment vector
+        - N: Resultant force vector (3x1)
+        - M: Resultant moment vector (3x1)
+        - Nt: Thermal force vector (3x1)
+        - Mt: Thermal moment vector (3x1)
         """
-        Nt, Mt = self.thermal_forces_and_moments(deltaT)
+        Nt, Mt = self.calc_thermal_forces(deltaT)
 
         N = self.A @ eps0 + self.B @ kappa - Nt
         M = self.B @ eps0 + self.D @ kappa - Mt
 
-        return N, M
+        return N, M, Nt, Mt
     
-    def forces2def(self, Nm, Mm, deltaT=0):
+    def calc_def(self, Nm, Mm, deltaT=0):
         """
-        Compute the mid-plane strains (eps0) and curvatures (kappa) from given forces and moments.
+        Compute the mid-plane strains (eps0) and curvatures (kappa) from applied forces and moments.
 
         Parameters:
-        - Nm: Mechanical force vector
-        - Mm: Mechanical moment vector
+        - Nm: Mechanical force vector (3x1)
+        - Mm: Mechanical moment vector (3x1)
         - deltaT: Temperature difference (default: 0)
 
         Returns:
-        - eps0: Mid-plane strain vector
-        - kappa: Curvature vector
+        - eps0: Mid-plane strain vector (3x1)
+        - kappa: Curvature vector (3x1)
+        - Nt: Thermal force vector (3x1)
+        - Mt: Thermal moment vector (3x1)
         """
-        Nt, Mt = self.thermal_forces_and_moments(deltaT)
+        Nt, Mt = self.calc_thermal_forces(deltaT)
 
         # Adjust forces and moments to account for thermal effects
         N = Nm + Nt
@@ -112,4 +133,13 @@ class Laminate:
         eps0 = eps_kappa[:3]
         kappa = eps_kappa[3:]
 
-        return eps0, kappa
+        return eps0, kappa, Nt, Mt
+
+    def lamina_def(self, eps0, kappa):
+        epsbot = []
+        epstop = []
+        for lam in self.layup:
+            epsbot.append(eps0 + lam.zbot*kappa)
+            epstop.append(eps0 + lam.ztop*kappa)
+        return epsbot, epstop
+

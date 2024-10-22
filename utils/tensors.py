@@ -1,6 +1,6 @@
 import numpy as np
 
-def tensor2vec(A):
+def vector(A):
     """
     Convert a 2x2 or 3x3 tensor (matrix) to a vector format.
     
@@ -15,10 +15,12 @@ def tensor2vec(A):
         return np.array([[A[0, 0]], [A[1, 1]], [A[0, 1]]])
     elif shape == (3, 3):
         return np.array([[A[0, 0]], [A[1, 1]], [A[2, 2]], [A[1, 2]], [A[0, 2]], [A[0, 1]]])
+    elif shape == (2,1) or shape == (3,1):
+        return A
     else:
         raise ValueError("Input tensor must be 2x2 or 3x3")
 
-def vec2tensor(Avec):
+def tensor(Avec):
     """
     Convert a vector to a 2x2 or 3x3 tensor (matrix).
     
@@ -28,9 +30,12 @@ def vec2tensor(Avec):
     Returns:
     - A: Tensor (matrix) representation of the vector
     """
-    length = Avec.shape[0]
+    shape = Avec.shape
+    length = shape[0]
     
-    if length == 3:  # Convert to 2x2 matrix
+    if shape == (2, 2) or shape == (3,3):
+        return Avec
+    elif length == 3:  # Convert to 2x2 matrix
         A = np.zeros((2, 2))
         A[0, 0] = Avec[0]
         A[1, 1] = Avec[1]
@@ -61,8 +66,7 @@ def rotate(theta, A):
     """
     # Check if the input is a vector and convert to matrix if needed
     is_vector = A.shape[1] == 1
-    if is_vector:
-        A = vec2tensor(A)
+    A = tensor(A)
     
     # Convert theta from degrees to radians
     theta_rad = np.radians(theta)
@@ -76,6 +80,6 @@ def rotate(theta, A):
     
     # Convert back to vector form if it was initially a vector
     if is_vector:
-        return tensor2vec(A_rotated)
+        return vector(A_rotated)
     
     return A_rotated
